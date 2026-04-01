@@ -1,6 +1,7 @@
-import { FiLogOut, FiUser } from 'react-icons/fi';
+import { FiLogOut } from 'react-icons/fi';
+// Remove FiUser import since it's not used
 
-function Navbar({ admin, onLogout }) {
+function Navbar({ admin = { fullName: 'Admin' }, onLogout }) {
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
