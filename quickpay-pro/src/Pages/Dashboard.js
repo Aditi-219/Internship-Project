@@ -6,15 +6,24 @@ import LeaveRequestModal from "../Components/LeaveRequestModal";
 import PendingLeavesModal from "../Components/PendingLeavesModal";
 import PayrollSummary from "../Components/PayrollSummary";
 import { api } from "../api";
-import { FiUsers, FiDollarSign, FiCalendar, FiTrendingUp, FiUserPlus, FiClock, FiEye, FiEyeOff, FiRepeat, FiPrinter } from 'react-icons/fi';
+import { FiUsers, FiDollarSign, FiCalendar, FiTrendingUp, FiUserPlus, FiClock, FiEye, FiEyeOff, FiRepeat, FiPrinter, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 
-// Add admin prop with default value to prevent undefined error
 function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
+  // Add these state variables
+const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+const [showLeaveModal, setShowLeaveModal] = useState(false);
+const [showPendingLeavesModal, setShowPendingLeavesModal] = useState(false);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPayroll, setShowPayroll] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [stats, setStats] = useState({ totalStaff: 0, totalPayroll: 0, pendingLeaves: 0, unpaidStaff: 0 });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
 
   const fetchStaff = async () => {
     try {
@@ -29,10 +38,10 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
       setStats({ totalStaff: data.length, totalPayroll, pendingLeaves, unpaidStaff });
       setError(null);
     } catch (err) {
-      setError("Failed to fetch staff data");
+      showToast("Failed to fetch staff data", "error");
       console.error(err);
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 500); // Small delay for smooth transition
     }
   };
 
@@ -42,9 +51,10 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     try {
       await api.addStaff(newStaff);
       await fetchStaff();
-      alert("Staff added successfully!");
+      showToast("Staff added successfully!", "success");
+      closeModal('addStaffModal');
     } catch (err) {
-      setError("Failed to add staff");
+      showToast("Failed to add staff", "error");
       console.error(err);
     }
   };
@@ -53,24 +63,23 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     try {
       await api.updateStaff(staffId, staffData);
       await fetchStaff();
-      alert("Staff updated successfully!");
-      const modal = document.getElementById('editStaffModal');
-      const bootstrapModal = window.bootstrap.Modal.getInstance(modal);
-      if (bootstrapModal) bootstrapModal.hide();
+      showToast("Staff updated successfully!", "success");
     } catch (err) {
-      setError("Failed to update staff");
+      showToast("Failed to update staff", "error");
       console.error(err);
     }
   };
 
   const deleteStaff = async (staffId) => {
-    try {
-      await api.deleteStaff(staffId);
-      await fetchStaff();
-      alert("Staff deleted successfully!");
-    } catch (err) {
-      setError("Failed to delete staff");
-      console.error(err);
+    if (window.confirm("Delete this staff member?")) {
+      try {
+        await api.deleteStaff(staffId);
+        await fetchStaff();
+        showToast("Staff deleted successfully!", "success");
+      } catch (err) {
+        showToast("Failed to delete staff", "error");
+        console.error(err);
+      }
     }
   };
 
@@ -78,9 +87,10 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     try {
       await api.requestLeave({ staffId, staffName, leaveType });
       await fetchStaff();
-      alert("Leave request submitted successfully!");
+      showToast("Leave request submitted!", "success");
+      closeModal('leaveModal');
     } catch (err) {
-      setError("Failed to request leave");
+      showToast("Failed to request leave", "error");
       console.error(err);
     }
   };
@@ -89,9 +99,9 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     try {
       await api.approveLeave(leaveId);
       await fetchStaff();
-      alert("Leave approved successfully!");
+      showToast("Leave approved successfully!", "success");
     } catch (err) {
-      setError("Failed to approve leave");
+      showToast("Failed to approve leave", "error");
       console.error(err);
     }
   };
@@ -100,9 +110,9 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     try {
       await api.markAsPaid(staffId);
       await fetchStaff();
-      alert("Salary marked as paid!");
+      showToast("Salary marked as paid!", "success");
     } catch (err) {
-      setError("Failed to mark as paid");
+      showToast("Failed to mark as paid", "error");
       console.error(err);
     }
   };
@@ -112,13 +122,31 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
       try {
         await api.resetMonth();
         await fetchStaff();
-        alert("Month reset successfully!");
+        showToast("Month reset successfully!", "success");
       } catch (err) {
-        setError("Failed to reset month");
+        showToast("Failed to reset month", "error");
         console.error(err);
       }
     }
   };
+
+const closeModal = (modalId) => {
+  const modalElement = document.getElementById(modalId);
+  if (modalElement) {
+    const modal = window.bootstrap.Modal.getInstance(modalElement);
+    if (modal) {
+      modal.hide();
+    }
+    // Clean up any lingering backdrops
+    setTimeout(() => {
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => backdrop.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }, 200);
+  }
+};
 
   const getPendingLeavesForStaff = async (staffId) => {
     try {
@@ -144,23 +172,8 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
       </style></head><body>
       <h1>QuickPay Pro+ - Staff Directory</h1>
       <p>Generated: ${new Date().toLocaleString()}</p>
-       <table>
-        <thead>
-          <tr><th>#</th><th>Name</th><th>Dept</th><th>Wage</th><th>Paid</th><th>Unpaid</th><th>Net Salary</th><th>Status</th></tr>
-        </thead>
-        <tbody>${staff.map((s, i) => `
-          <tr>
-            <td>${i+1}</td>
-            <td>${s.name}</td>
-            <td>${s.department}</td>
-            <td>₹${s.dailyWage}</td>
-            <td>${s.paidLeavesUsed}/${s.paidLeaveQuota}</td>
-            <td>${s.unpaidLeaves}</td>
-            <td>₹${(s.dailyWage*30 - s.unpaidLeaves*s.dailyWage).toLocaleString()}</td>
-            <td>${s.paymentStatus}</td>
-          </tr>
-        `).join('')}</tbody>
-       </table>
+      <table><thead><tr><th>#</th><th>Name</th><th>Dept</th><th>Wage</th><th>Paid</th><th>Unpaid</th><th>Net Salary</th><th>Status</th></tr></thead>
+      <tbody>${staff.map((s, i) => `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.department}</td><td>₹${s.dailyWage}</td><td>${s.paidLeavesUsed}/${s.paidLeaveQuota}</td><td>${s.unpaidLeaves}</td><td>₹${(s.dailyWage*30 - s.unpaidLeaves*s.dailyWage).toLocaleString()}</td><td>${s.paymentStatus}</td></tr>`).join('')}</tbody></table>
       <div class="footer"><p>Total Staff: ${staff.length} | Total Payroll: ₹${stats.totalPayroll.toLocaleString()}</p></div>
       </body></html>
     `);
@@ -168,17 +181,47 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
     win.print();
   };
 
-  if (loading) return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-      <div className="text-center"><div className="spinner-border text-light" style={{ width: '3rem', height: '3rem' }}></div><p className="text-white mt-3">Loading...</p></div>
-    </div>
-  );
+  // Simple loading - no popup, just subtle spinner
+  if (loading) {
+    return (
+      <div style={{ background: '#f0f2f5', minHeight: '100vh' }}>
+        <Navbar admin={admin} onLogout={onLogout} />
+        <div className="container-fluid px-4 py-4">
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+            <div className="text-center">
+              <div className="spinner-border text-primary" style={{ width: '2rem', height: '2rem' }}></div>
+              <p className="text-muted mt-2 small">Loading data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+    <div style={{ background: '#f0f2f5', minHeight: '100vh' }}>
       <Navbar admin={admin} onLogout={onLogout} />
+      
+      {/* Toast Notification - Auto dismiss */}
+      {toast.show && (
+        <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
+          <div className={`alert alert-${toast.type === 'success' ? 'success' : 'danger'} shadow-lg border-0 rounded-3 fade show`} style={{ animation: 'slideIn 0.3s ease' }}>
+            <div className="d-flex align-items-center">
+              {toast.type === 'success' ? <FiCheckCircle size={18} className="me-2" /> : <FiAlertCircle size={18} className="me-2" />}
+              {toast.message}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="container-fluid px-4 py-4">
-        {error && <div className="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">{error}<button type="button" className="btn-close" onClick={() => setError(null)}></button></div>}
+        {error && (
+          <div className="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <FiAlertCircle className="me-2" />
+            {error}
+            <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+          </div>
+        )}
         
         {/* Stats Cards */}
         <div className="row mb-4">
@@ -203,9 +246,15 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
         
         {/* Action Buttons */}
         <div className="mb-4 d-flex flex-wrap gap-2">
-          <button className="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal" style={{ borderRadius: '10px', padding: '10px 20px' }}><FiUserPlus className="me-2" />Add Staff</button>
-          <button className="btn btn-info text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#leaveModal" style={{ borderRadius: '10px', padding: '10px 20px' }}><FiCalendar className="me-2" />Request Leave</button>
-          <button className="btn btn-secondary shadow-sm" data-bs-toggle="modal" data-bs-target="#pendingLeavesModal" style={{ borderRadius: '10px', padding: '10px 20px' }}><FiClock className="me-2" />Pending ({stats.pendingLeaves})</button>
+          <button className="btn btn-primary shadow-sm" onClick={() => setShowAddStaffModal(true)} style={{ borderRadius: '10px', padding: '10px 20px' }}>
+    <FiUserPlus className="me-2" />Add Staff
+  </button>
+  <button className="btn btn-info text-white shadow-sm" onClick={() => setShowLeaveModal(true)} style={{ borderRadius: '10px', padding: '10px 20px' }}>
+    <FiCalendar className="me-2" />Request Leave
+  </button>
+  <button className="btn btn-secondary shadow-sm" onClick={() => setShowPendingLeavesModal(true)} style={{ borderRadius: '10px', padding: '10px 20px' }}>
+    <FiClock className="me-2" />Pending ({stats.pendingLeaves})
+  </button>
           <button className="btn btn-success shadow-sm" onClick={() => setShowPayroll(!showPayroll)} style={{ borderRadius: '10px', padding: '10px 20px' }}>{showPayroll ? <FiEyeOff className="me-2" /> : <FiEye className="me-2" />}{showPayroll ? "Hide" : "View"} Payroll</button>
           <button className="btn btn-danger shadow-sm" onClick={resetMonth} style={{ borderRadius: '10px', padding: '10px 20px' }}><FiRepeat className="me-2" />Reset Month</button>
           <button className="btn btn-dark shadow-sm" onClick={printStaffList} style={{ borderRadius: '10px', padding: '10px 20px' }}><FiPrinter className="me-2" />Print List</button>
@@ -223,11 +272,29 @@ function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
           getPendingLeavesForStaff={getPendingLeavesForStaff}
         />
         
-        <AddStaffModal addStaff={addStaff} />
-        <LeaveRequestModal requestLeave={requestLeave} staff={staff} />
-        <PendingLeavesModal approveLeave={approveLeave} />
+        <AddStaffModal 
+  addStaff={addStaff} 
+  isOpen={showAddStaffModal} 
+  onClose={() => setShowAddStaffModal(false)} 
+/>
+<LeaveRequestModal 
+  requestLeave={requestLeave} 
+  staff={staff} 
+  isOpen={showLeaveModal} 
+  onClose={() => setShowLeaveModal(false)} 
+/>
+<PendingLeavesModal 
+  approveLeave={approveLeave} 
+  isOpen={showPendingLeavesModal} 
+  onClose={() => setShowPendingLeavesModal(false)} 
+/>
       </div>
-      <style>{`.hover-shadow{transition:all 0.3s ease}.hover-shadow:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,0.1)!important}`}</style>
+      
+      <style>{`
+        .hover-shadow{transition:all 0.3s ease}
+        .hover-shadow:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,0.1)!important}
+        @keyframes slideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+      `}</style>
     </div>
   );
 }

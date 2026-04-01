@@ -103,3 +103,141 @@ body {
     border-radius: 15px;
   }
 }
+
+/* ============================================ */
+/* PERMANENT FIX FOR MODAL FREEZING AND DIMMING */
+/* ============================================ */
+
+/* Modal backdrop - ensure proper layering */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+}
+
+.modal-backdrop.fade {
+  opacity: 0;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+/* Modal - ensure it's above backdrop */
+.modal {
+  z-index: 1050;
+}
+
+/* Body when modal is open - prevent scrolling */
+body.modal-open {
+  overflow: hidden !important;
+  padding-right: 0 !important;
+}
+
+/* Ensure body doesn't have extra padding when modal closes */
+body {
+  padding-right: 0 !important;
+  overflow-x: hidden;
+}
+
+/* Force remove any lingering backdrop */
+.modal-backdrop:last-child {
+  display: block;
+}
+
+/* Prevent multiple backdrops from stacking */
+.modal-backdrop + .modal-backdrop {
+  display: none;
+}
+
+/* Modal dialog centering */
+.modal-dialog {
+  margin: 1.75rem auto;
+}
+
+/* Modal transitions - smooth */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: translate(0, -50px);
+}
+
+.modal.show .modal-dialog {
+  transform: translate(0, 0);
+}
+
+/* Toast notifications */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Prevent content shift when modal opens */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Fix for modal backdrop removal */
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+/* Ensure buttons inside modals don't cause issues */
+.modal .btn {
+  transition: all 0.2s ease;
+}
+
+.modal .btn:active {
+  transform: scale(0.98);
+}
+
+/* Fix for modal header gradient */
+.modal-header {
+  border-bottom: none;
+}
+
+.modal-footer {
+  border-top: none;
+}
+
+/* Ensure modals are responsive on mobile */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 1rem;
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+}
+/* Ensure body scroll is disabled when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Modal backdrop animation */
+.modal-backdrop {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.5; }
+}
