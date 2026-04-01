@@ -1,14 +1,20 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Get headers with authentication token
+const getHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 export const api = {
   // Staff endpoints
-getLeavesByStaff: async (staffId) => {
-  const response = await fetch(`${API_BASE_URL}/leave/staff/${staffId}`);
-  if (!response.ok) throw new Error('Failed to fetch leaves');
-  return response.json();
-},
   getStaff: async () => {
-    const response = await fetch(`${API_BASE_URL}/staff`);
+    const response = await fetch(`${API_BASE_URL}/staff`, {
+      headers: getHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch staff');
     return response.json();
   },
@@ -16,7 +22,7 @@ getLeavesByStaff: async (staffId) => {
   addStaff: async (staffData) => {
     const response = await fetch(`${API_BASE_URL}/staff`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(staffData)
     });
     if (!response.ok) throw new Error('Failed to add staff');
@@ -26,7 +32,7 @@ getLeavesByStaff: async (staffId) => {
   updateStaff: async (id, staffData) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(staffData)
     });
     if (!response.ok) throw new Error('Failed to update staff');
@@ -35,7 +41,8 @@ getLeavesByStaff: async (staffId) => {
   
   deleteStaff: async (id) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to delete staff');
     return response.json();
@@ -43,7 +50,8 @@ getLeavesByStaff: async (staffId) => {
   
   markAsPaid: async (id) => {
     const response = await fetch(`${API_BASE_URL}/staff/${id}/mark-paid`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to mark as paid');
     return response.json();
@@ -51,7 +59,8 @@ getLeavesByStaff: async (staffId) => {
   
   resetMonth: async () => {
     const response = await fetch(`${API_BASE_URL}/staff/reset-month`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to reset month');
     return response.json();
@@ -61,7 +70,7 @@ getLeavesByStaff: async (staffId) => {
   requestLeave: async (leaveData) => {
     const response = await fetch(`${API_BASE_URL}/leave/request`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(leaveData)
     });
     if (!response.ok) throw new Error('Failed to request leave');
@@ -70,7 +79,8 @@ getLeavesByStaff: async (staffId) => {
   
   approveLeave: async (leaveId) => {
     const response = await fetch(`${API_BASE_URL}/leave/${leaveId}/approve`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to approve leave');
     return response.json();
@@ -78,35 +88,51 @@ getLeavesByStaff: async (staffId) => {
   
   rejectLeave: async (leaveId) => {
     const response = await fetch(`${API_BASE_URL}/leave/${leaveId}/reject`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to reject leave');
     return response.json();
   },
   
   getPendingLeaves: async () => {
-    const response = await fetch(`${API_BASE_URL}/leave/pending`);
+    const response = await fetch(`${API_BASE_URL}/leave/pending`, {
+      headers: getHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch pending leaves');
+    return response.json();
+  },
+  
+  getLeavesByStaff: async (staffId) => {
+    const response = await fetch(`${API_BASE_URL}/leave/staff/${staffId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch leaves');
     return response.json();
   },
   
   // Payroll endpoints
   getPayrollSummary: async () => {
-    const response = await fetch(`${API_BASE_URL}/payroll/summary`);
+    const response = await fetch(`${API_BASE_URL}/payroll/summary`, {
+      headers: getHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch payroll summary');
     return response.json();
   },
   
   processAllSalaries: async () => {
     const response = await fetch(`${API_BASE_URL}/payroll/process-all`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getHeaders()
     });
     if (!response.ok) throw new Error('Failed to process salaries');
     return response.json();
   },
   
   getSalaryHistory: async (staffId) => {
-    const response = await fetch(`${API_BASE_URL}/payroll/history/${staffId}`);
+    const response = await fetch(`${API_BASE_URL}/payroll/history/${staffId}`, {
+      headers: getHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch salary history');
     return response.json();
   }

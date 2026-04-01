@@ -8,7 +8,8 @@ import PayrollSummary from "../Components/PayrollSummary";
 import { api } from "../api";
 import { FiUsers, FiDollarSign, FiCalendar, FiTrendingUp, FiUserPlus, FiClock, FiEye, FiEyeOff, FiRepeat, FiPrinter } from 'react-icons/fi';
 
-function Dashboard() {
+// Add admin prop with default value to prevent undefined error
+function Dashboard({ admin = { fullName: 'Admin' }, onLogout }) {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,6 +30,7 @@ function Dashboard() {
       setError(null);
     } catch (err) {
       setError("Failed to fetch staff data");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -36,32 +38,96 @@ function Dashboard() {
 
   useEffect(() => { fetchStaff(); }, []);
 
-  const handleAction = async (action, ...args) => {
+  const addStaff = async (newStaff) => {
     try {
-      await action(...args);
+      await api.addStaff(newStaff);
       await fetchStaff();
-      return true;
+      alert("Staff added successfully!");
     } catch (err) {
-      setError(`Failed to ${action.name}`);
-      return false;
+      setError("Failed to add staff");
+      console.error(err);
     }
   };
 
-  const addStaff = (data) => handleAction(api.addStaff, data);
-  const updateStaff = (id, data) => handleAction(api.updateStaff, id, data);
-  const deleteStaff = (id) => handleAction(api.deleteStaff, id);
-  const requestLeave = (staffId, staffName, leaveType) => handleAction(api.requestLeave, { staffId, staffName, leaveType });
-  const approveLeave = (leaveId) => handleAction(api.approveLeave, leaveId);
-  const markAsPaid = (staffId) => handleAction(api.markAsPaid, staffId);
+  const updateStaff = async (staffId, staffData) => {
+    try {
+      await api.updateStaff(staffId, staffData);
+      await fetchStaff();
+      alert("Staff updated successfully!");
+      const modal = document.getElementById('editStaffModal');
+      const bootstrapModal = window.bootstrap.Modal.getInstance(modal);
+      if (bootstrapModal) bootstrapModal.hide();
+    } catch (err) {
+      setError("Failed to update staff");
+      console.error(err);
+    }
+  };
+
+  const deleteStaff = async (staffId) => {
+    try {
+      await api.deleteStaff(staffId);
+      await fetchStaff();
+      alert("Staff deleted successfully!");
+    } catch (err) {
+      setError("Failed to delete staff");
+      console.error(err);
+    }
+  };
+
+  const requestLeave = async (staffId, staffName, leaveType) => {
+    try {
+      await api.requestLeave({ staffId, staffName, leaveType });
+      await fetchStaff();
+      alert("Leave request submitted successfully!");
+    } catch (err) {
+      setError("Failed to request leave");
+      console.error(err);
+    }
+  };
+
+  const approveLeave = async (leaveId) => {
+    try {
+      await api.approveLeave(leaveId);
+      await fetchStaff();
+      alert("Leave approved successfully!");
+    } catch (err) {
+      setError("Failed to approve leave");
+      console.error(err);
+    }
+  };
+
+  const markAsPaid = async (staffId) => {
+    try {
+      await api.markAsPaid(staffId);
+      await fetchStaff();
+      alert("Salary marked as paid!");
+    } catch (err) {
+      setError("Failed to mark as paid");
+      console.error(err);
+    }
+  };
+
   const resetMonth = async () => {
     if (window.confirm("Reset month? This clears all leaves and payment status.")) {
-      await handleAction(api.resetMonth);
+      try {
+        await api.resetMonth();
+        await fetchStaff();
+        alert("Month reset successfully!");
+      } catch (err) {
+        setError("Failed to reset month");
+        console.error(err);
+      }
     }
   };
 
   const getPendingLeavesForStaff = async (staffId) => {
-    const leaves = await api.getLeavesByStaff(staffId);
-    return leaves.filter(l => l.status === 'Pending');
+    try {
+      const leaves = await api.getLeavesByStaff(staffId);
+      return leaves.filter(l => l.status === 'Pending');
+    } catch (err) {
+      console.error("Failed to fetch pending leaves:", err);
+      return [];
+    }
   };
 
   const printStaffList = () => {
@@ -78,14 +144,23 @@ function Dashboard() {
       </style></head><body>
       <h1>QuickPay Pro+ - Staff Directory</h1>
       <p>Generated: ${new Date().toLocaleString()}</p>
-      <table><thead><tr><th>#</th><th>Name</th><th>Dept</th><th>Wage</th><th>Paid</th><th>Unpaid</th><th>Net Salary</th><th>Status</th></tr></thead>
-      <tbody>${staff.map((s, i) => `
-        <tr><td>${i+1}</td><td>${s.name}</td><td>${s.department}</td>
-        <td>₹${s.dailyWage}</td><td>${s.paidLeavesUsed}/${s.paidLeaveQuota}</td>
-        <td>${s.unpaidLeaves}</td>
-        <td>₹${(s.dailyWage*30 - s.unpaidLeaves*s.dailyWage).toLocaleString()}</td>
-        <td>${s.paymentStatus}</td></tr>
-      `).join('')}</tbody></table>
+       <table>
+        <thead>
+          <tr><th>#</th><th>Name</th><th>Dept</th><th>Wage</th><th>Paid</th><th>Unpaid</th><th>Net Salary</th><th>Status</th></tr>
+        </thead>
+        <tbody>${staff.map((s, i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td>${s.name}</td>
+            <td>${s.department}</td>
+            <td>₹${s.dailyWage}</td>
+            <td>${s.paidLeavesUsed}/${s.paidLeaveQuota}</td>
+            <td>${s.unpaidLeaves}</td>
+            <td>₹${(s.dailyWage*30 - s.unpaidLeaves*s.dailyWage).toLocaleString()}</td>
+            <td>${s.paymentStatus}</td>
+          </tr>
+        `).join('')}</tbody>
+       </table>
       <div class="footer"><p>Total Staff: ${staff.length} | Total Payroll: ₹${stats.totalPayroll.toLocaleString()}</p></div>
       </body></html>
     `);
@@ -101,7 +176,7 @@ function Dashboard() {
 
   return (
     <div style={{ background: '#f8f9fa', minHeight: '100vh' }}>
-      <Navbar />
+      <Navbar admin={admin} onLogout={onLogout} />
       <div className="container-fluid px-4 py-4">
         {error && <div className="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">{error}<button type="button" className="btn-close" onClick={() => setError(null)}></button></div>}
         
