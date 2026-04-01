@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
+const initAdmin = require('../scripts/initAdmin');
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    
+    // Create admin user if not exists
+    await initAdmin();
+    
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    console.log('\nMake sure MongoDB is running with: mongod --dbpath C:\\Users\\nehad\\mongodb-data');
+    console.error(`❌ Error: ${error.message}`);
     process.exit(1);
   }
 };

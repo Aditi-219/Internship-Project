@@ -1,6 +1,8 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-// Get headers with authentication token
+// Add this for debugging
+console.log('API URL:', API_BASE_URL);
+
 const getHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -10,7 +12,6 @@ const getHeaders = () => {
 };
 
 export const api = {
-  // Staff endpoints
   getStaff: async () => {
     const response = await fetch(`${API_BASE_URL}/staff`, {
       headers: getHeaders()
@@ -66,7 +67,6 @@ export const api = {
     return response.json();
   },
   
-  // Leave endpoints
   requestLeave: async (leaveData) => {
     const response = await fetch(`${API_BASE_URL}/leave/request`, {
       method: 'POST',
@@ -111,7 +111,6 @@ export const api = {
     return response.json();
   },
   
-  // Payroll endpoints
   getPayrollSummary: async () => {
     const response = await fetch(`${API_BASE_URL}/payroll/summary`, {
       headers: getHeaders()
