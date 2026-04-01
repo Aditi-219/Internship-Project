@@ -7,6 +7,9 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Use environment variable for API URL
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !password) {
@@ -18,7 +21,7 @@ function Login({ onLogin }) {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -108,19 +111,24 @@ function Login({ onLogin }) {
                     style={{ borderRadius: '10px' }}
                   >
                     {loading ? (
-                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Logging in...
+                      </>
                     ) : (
-                      <FiLogIn className="me-2" />
+                      <>
+                        <FiLogIn className="me-2" />
+                        Login
+                      </>
                     )}
-                    {loading ? 'Logging in...' : 'Login'}
                   </button>
                 </form>
                 
                 <div className="text-center mt-4">
                   <small className="text-muted">
                     Default credentials:<br />
-                    Username: admin<br />
-                    Password: admin123
+                    Username: <strong>admin</strong><br />
+                    Password: <strong>admin123</strong>
                   </small>
                 </div>
               </div>
